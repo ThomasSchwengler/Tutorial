@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Stopwatch</string>
+    <string name="button_reset_text">Reset</string>
+    <string name="button_start_text">Start</string>
+    <string name="button_lap_text">Lap</string>
+    <string name="button_pause_text">Pause</string>
 </resources>
