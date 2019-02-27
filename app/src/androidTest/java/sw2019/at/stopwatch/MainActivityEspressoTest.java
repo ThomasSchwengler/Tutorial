@@ -30,13 +30,6 @@ public class MainActivityEspressoTest {
 	}
 
 	@Test
-	public void testButtonsHaveValidText() {
-		onView(withId(R.id.bt_reset)).check(matches(isDisplayed()));
-		onView(withId(R.id.bt_start)).check(matches(isDisplayed()));
-		onView(withId(R.id.bt_lap)).check(matches(isDisplayed()));
-	}
-
-	@Test
 	public void testTimeViewVisible() {
 		onView(withId(R.id.tv_time)).check(matches(isDisplayed()));
 		onView(withId(R.id.tv_time)).check(matches(withText("0:00:00")));
@@ -51,7 +44,7 @@ public class MainActivityEspressoTest {
 	@Test
 	public void testPauseButtonKeepsTimeView() {
 		onView(withId(R.id.bt_start)).perform(click());
-		onView(withId(R.id.bt_start)).perform(click());
+//		onView(withId(R.id.bt_start)).perform(click());
 
 		TextView textView = mainActivityRule.getActivity().findViewById(R.id.tv_time);
 		String currentTimeText = textView.getText().toString();

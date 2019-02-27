@@ -1,27 +1,27 @@
 package sw2019.at.stopwatch;
 
-import android.os.Handler;
-import android.os.SystemClock;
-import android.text.format.DateUtils;
+import android.os.Bundle;
 
 import java.util.Locale;
 
-public class Clock implements Runnable {
-	private final Handler handler;
-	private final TickListener tickListener;
+public class Clock {
+	private static final String START_TIME = "START_TIME";
+	private static final String OFFSET_TIME = "OFFSET_TIME";
+	private static final String RUNNING = "RUNNING";
+	private final SystemTimeProvider timeProvider;
 	private boolean running;
 	private long startTime;
 	private long offsetTime;
 
-	public Clock(Handler handler, TickListener tickListener) {
-		this.handler = handler;
-		this.tickListener = tickListener;
+	public Clock(SystemTimeProvider timeProvider) {
+		this.timeProvider = timeProvider;
 	}
 
 	public void start() {
-		running = true;
-		startTime = SystemClock.elapsedRealtime() - offsetTime;
-		handler.postDelayed(this, 50);
+		if (!running) {
+			running = true;
+			startTime = calculateElapsedTime(offsetTime);
+		}
 	}
 
 	public boolean isRunning() {
@@ -29,24 +29,32 @@ public class Clock implements Runnable {
 	}
 
 	public long getElapsedTime() {
-		return running ? SystemClock.elapsedRealtime() - startTime : offsetTime;
+		return running ? calculateElapsedTime(startTime) : offsetTime;
 	}
 
-	@Override
-	public void run() {
-		tickListener.onTick();
-		handler.postDelayed(this, 50);
+	public void saveState(Bundle bundle) {
+		bundle.putLong(START_TIME, startTime);
+		bundle.putLong(OFFSET_TIME, offsetTime);
+		bundle.putBoolean(RUNNING, running);
+	}
+
+	public void restoreState(Bundle bundle) {
+		startTime = bundle.getLong(START_TIME);
+		offsetTime = bundle.getLong(OFFSET_TIME);
+		running = bundle.getBoolean(RUNNING);
+	}
+
+	private long calculateElapsedTime(long startTime) {
+		return timeProvider.elapsedRealtime() - startTime;
 	}
 
 	public void pause() {
 		running = false;
-		handler.removeCallbacks(this);
-		offsetTime = SystemClock.elapsedRealtime() - startTime;
+		offsetTime = calculateElapsedTime(startTime);
 	}
 
 	public void reset() {
 		running = false;
-		handler.removeCallbacks(this);
 		offsetTime = 0;
 	}
 
@@ -54,13 +62,13 @@ public class Clock implements Runnable {
 		long elapsedTime = getElapsedTime();
 		int milliseconds = (int) (elapsedTime % 1000) / 10;
 		int seconds = (int) (elapsedTime / 1000) % 60;
-		int minutes =  (int) (elapsedTime / 1000) / 60;
+		int minutes = (int) (elapsedTime / 1000) / 60;
 		return String.format(locale, "%01d", minutes)
 				+ ":" + String.format(locale, "%02d", seconds)
 				+ ":" + String.format(locale, "%02d", milliseconds);
 	}
 
-	public interface TickListener {
-		void onTick();
+	public interface SystemTimeProvider {
+		long elapsedRealtime();
 	}
 }

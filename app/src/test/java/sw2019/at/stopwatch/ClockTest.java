@@ -1,13 +1,9 @@
 package sw2019.at.stopwatch;
 
-import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
-import android.support.test.InstrumentationRegistry;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -21,37 +17,29 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
-public class ClockInstrumentedTest {
+@RunWith(MockitoJUnitRunner.Silent.class)
+public class ClockTest {
 
 	@Mock
-	public Clock.TickListener tickListener;
+	public Clock.SystemTimeProvider timeProvider;
 
 	private Clock clock;
 
-	private Locale locale;
+	private Locale locale = Locale.US;
 
 	@Before
 	public void setUp() {
-		Context targetContext = InstrumentationRegistry.getTargetContext();
-		locale = Locale.US;
-		Looper mainLooper = targetContext.getMainLooper();
-
-		clock = new Clock(new Handler(mainLooper), tickListener);
+		clock = new Clock(timeProvider);
 	}
 
 	@Test
-	public void testInitalState() {
+	public void testInitialState() {
 		assertNotNull(clock);
 		assertFalse(clock.isRunning());
 		assertEquals(0, clock.getElapsedTime());
 		assertEquals("0:00:00", clock.getElapsedTimeString(locale));
-
-		verifyZeroInteractions(tickListener);
 	}
 
 	@Test
@@ -62,24 +50,25 @@ public class ClockInstrumentedTest {
 	}
 
 	@Test
-	public void testStartElapsesTime() throws InterruptedException {
+	public void testStartElapsesTime() {
+		when(timeProvider.elapsedRealtime()).thenReturn(0L, 5L, 10L, 15L);
+
 		clock.start();
 
 		long firstTimeStamp = clock.getElapsedTime();
-		Thread.sleep(100);
 		long secondTimeStamp = clock.getElapsedTime();
 
 		assertThat(secondTimeStamp, is(greaterThan(firstTimeStamp)));
 	}
 
 	@Test
-	public void testPauseStopsTimer() throws InterruptedException {
+	public void testPauseStopsTimer() {
+		when(timeProvider.elapsedRealtime()).thenReturn(0L, 5L, 10L, 15L);
+
 		clock.start();
-		Thread.sleep(100);
 		clock.pause();
 
 		long firstTimeStamp = clock.getElapsedTime();
-		Thread.sleep(100);
 		long secondTimeStamp = clock.getElapsedTime();
 
 		assertEquals(firstTimeStamp, secondTimeStamp);
@@ -96,6 +85,8 @@ public class ClockInstrumentedTest {
 
 	@Test
 	public void testResetResetsTimer() {
+		when(timeProvider.elapsedRealtime()).thenReturn(0L, 5L, 10L, 15L);
+
 		clock.start();
 		clock.reset();
 
@@ -115,18 +106,10 @@ public class ClockInstrumentedTest {
 	}
 
 	@Test
-	public void testStartCallsTickListener() throws InterruptedException {
+	public void testStringMatchesPattern() {
+		when(timeProvider.elapsedRealtime()).thenReturn(0L, 5L, 10L, 15L);
+
 		clock.start();
-
-		Thread.sleep(100);
-
-		verify(tickListener, atLeastOnce()).onTick();
-	}
-
-	@Test
-	public void testStringMatchesPattern() throws InterruptedException {
-		clock.start();
-		Thread.sleep(100);
 
 		String elapsedTimeString = clock.getElapsedTimeString(locale);
 		assertTrue(elapsedTimeString.matches("\\d:\\d\\d:\\d\\d"));

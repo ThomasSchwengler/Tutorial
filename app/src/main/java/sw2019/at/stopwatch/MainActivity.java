@@ -9,15 +9,19 @@ import android.widget.TextView;
 
 import java.util.Locale;
 
-public class MainActivity extends AppCompatActivity implements Clock.TickListener {
+public class MainActivity extends AppCompatActivity implements Timer.TickListener {
 	private Button startButton;
-	private Clock clock;
+	private Timer timer;
 	private TextView timeTextView;
+	private Clock clock;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+
+		clock = new Clock(new AndroidSystemTimeProvider());
+		timer = new Timer(clock, new Handler(), this);
 
 		startButton = findViewById(R.id.bt_start);
 		Button resetButton = findViewById(R.id.bt_reset);
@@ -27,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements Clock.TickListene
 		startButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
-				if (clock.isRunning()) {
+				if (timer.isRunning()) {
 					onPauseClicked();
 				} else {
 					onStartClicked();
@@ -47,30 +51,46 @@ public class MainActivity extends AppCompatActivity implements Clock.TickListene
 			}
 		});
 
-		clock = new Clock(new Handler(), this);
+		if (savedInstanceState != null) {
+			clock.restoreState(savedInstanceState.getBundle("BUNDLE_CLOCK"));
+			if (clock.isRunning()) {
+				startButton.setText(R.string.button_pause_text);
+				timer.start();
+			}
+		}
+
 		updateTimeTextView();
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+
+		Bundle bundle = new Bundle();
+		clock.saveState(bundle);
+		outState.putBundle("BUNDLE_CLOCK", bundle);
 	}
 
 	public void updateTimeTextView() {
 		Locale locale = getResources().getConfiguration().locale;
-		timeTextView.setText(clock.getElapsedTimeString(locale));
+		timeTextView.setText(timer.getElapsedTimeString(locale));
 	}
 
 	public void onStartClicked() {
 		startButton.setText(R.string.button_pause_text);
-		clock.start();
+		timer.start();
 		updateTimeTextView();
 	}
 
 	public void onPauseClicked() {
 		startButton.setText(R.string.button_start_text);
-		clock.pause();
+		timer.pause();
 		updateTimeTextView();
 	}
 
 	public void onResetClicked() {
 		startButton.setText(R.string.button_start_text);
-		clock.reset();
+		timer.reset();
 		updateTimeTextView();
 	}
 
